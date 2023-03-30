@@ -99,6 +99,19 @@ struct HomeScreen: View {
         .animation(.elementDefault, value: context.viewState.roomListMode)
         .alert(item: $context.alertInfo) { $0.alert }
         .navigationTitle(L10n.screenRoomlistMainSpaceTitle)
+        .introspectNavigationController { navigationController in
+            let avatarImage = ImageRenderer(content: avatarMaterial).uiImage
+            let image = Asset.Images.onboardingBackgroundPart1.image
+            let appearance = navigationController.navigationBar.standardAppearance
+            appearance.backgroundImage = avatarImage
+            appearance.backgroundImageContentMode = .scaleToFill
+            navigationController.navigationBar.standardAppearance = appearance
+            navigationController.navigationBar.scrollEdgeAppearance = appearance
+//            navigationController.navigationBar.clipsToBounds = true
+        }
+        // .toolbarBackground(.pink, for: .navigationBar)
+        // .toolbarBackground(.visible, for: .navigationBar)
+        .toolbar(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 userMenuButton
@@ -111,6 +124,20 @@ struct HomeScreen: View {
             }
         }
         .background(Color.element.background.ignoresSafeArea())
+    }
+    
+    var avatarMaterial: some View {
+        LoadableAvatarImage(url: context.viewState.userAvatarURL,
+                            name: context.viewState.userDisplayName,
+                            contentID: context.viewState.userID,
+                            avatarSize: .user(on: .home),
+                            imageProvider: context.imageProvider)
+            .saturation(2)
+            .padding(AvatarSize.user(on: .home).value)
+            .offset(x: -AvatarSize.user(on: .home).value, y: -0.1 * AvatarSize.user(on: .home).value)
+            .background(Color.white)
+            .overlay(.ultraThinMaterial, in: Rectangle())
+//            .border(.blue)
     }
 
     @ViewBuilder
@@ -242,7 +269,11 @@ struct HomeScreen: View {
 struct HomeScreen_Previews: PreviewProvider {
     static var previews: some View {
         body(.loading)
+            .previewDisplayName("Loading")
         body(.loaded)
+            .previewDisplayName("Loaded")
+        avatar()
+            .previewDisplayName("Avatar")
     }
     
     static func body(_ state: MockRoomSummaryProviderState) -> some View {
@@ -255,6 +286,20 @@ struct HomeScreen_Previews: PreviewProvider {
         
         return NavigationStack {
             HomeScreen(context: viewModel.context)
+        }
+    }
+    
+    static func avatar() -> some View {
+        let userSession = MockUserSession(clientProxy: MockClientProxy(userID: "John Doe",
+                                                                       roomSummaryProvider: MockRoomSummaryProvider(state: .loaded)),
+                                          mediaProvider: MockMediaProvider())
+        
+        let viewModel = HomeScreenViewModel(userSession: userSession,
+                                            attributedStringBuilder: AttributedStringBuilder())
+        
+        return NavigationStack {
+            HomeScreen(context: viewModel.context)
+                .avatarMaterial
         }
     }
 }
