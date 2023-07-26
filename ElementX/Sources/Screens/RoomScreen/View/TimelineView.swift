@@ -159,7 +159,7 @@ struct TimelineView: View {
         }
         .opacity(scrollToBottomButtonVisible ? 1.0 : 0.0)
         .accessibilityHidden(!scrollToBottomButtonVisible)
-        .animation(.elementDefault, value: timelineIDs)
+        .animation(.elementDefault, value: viewState.timelineIDs)
     }
 
     private func paginateBackwardsIfNeeded() {
