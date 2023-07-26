@@ -31,6 +31,7 @@ struct TimelineView: View {
 
     @State private var scrollViewAdapter = ScrollViewAdapter()
     @State private var paginateBackwardsPublisher = PassthroughSubject<Void, Never>()
+    @StateObject private var helper = TimelineHelper()
 
     var body: some View {
         ScrollViewReader { scrollView in
@@ -80,6 +81,8 @@ struct TimelineView: View {
             }
 
             paginateBackwardsPublisher.send()
+
+            updateHelper(ids: viewState.timelineIDs)
         }
         .onReceive(paginateBackwardsPublisher.collect(.byTime(DispatchQueue.main, 0.1))) { _ in
             paginateBackwardsIfNeeded()
@@ -87,13 +90,29 @@ struct TimelineView: View {
         .onAppear {
             paginateBackwardsPublisher.send()
         }
+        .onChange(of: viewState.timelineIDs) { value in
+            updateHelper(ids: value)
+        }
+    }
+
+    private func updateHelper(ids: [String]) {
+        if helper.newRenderedID == nil ||
+            !scrollToBottomButtonVisible {
+            helper.newRenderedID = ids.last
+        }
+
+        helper.updateIDsToSkipRendering(ids: ids.reversed())
+    }
+
+    private var filteredReversedViewStates: [RoomTimelineItemViewState] {
+        viewState.itemViewStates.reversed().filter { !helper.idsToSkip.contains($0.id) }
     }
 
     private var timelineScrollView: some View {
         ScrollView {
             bottomPin
             LazyVStack(spacing: 0) {
-                ForEach(viewState.itemViewStates.reversed()) { viewState in
+                ForEach(filteredReversedViewStates) { viewState in
                     RoomTimelineItemView(viewState: viewState)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(timelineStyle.rowInsets)
@@ -140,7 +159,7 @@ struct TimelineView: View {
         }
         .opacity(scrollToBottomButtonVisible ? 1.0 : 0.0)
         .accessibilityHidden(!scrollToBottomButtonVisible)
-        .animation(.elementDefault, value: scrollToBottomButtonVisible)
+        .animation(.elementDefault, value: timelineIDs)
     }
 
     private func paginateBackwardsIfNeeded() {
@@ -160,6 +179,29 @@ struct TimelineView: View {
         }
 
         paginationAction()
+    }
+}
+
+private class TimelineHelper: ObservableObject {
+    var newRenderedID: String?
+    @Published var idsToSkip = [String]()
+
+    func updateIDsToSkipRendering(ids: [String]) {
+        if ids.last == newRenderedID {
+            idsToSkip = []
+            return
+        }
+
+        var skipRendering = [String]()
+        for id in ids {
+            if newRenderedID == id {
+                break
+            } else {
+                skipRendering.append(id)
+            }
+        }
+
+        idsToSkip = skipRendering
     }
 }
 
