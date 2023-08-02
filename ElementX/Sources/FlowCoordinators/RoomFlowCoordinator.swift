@@ -75,7 +75,9 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
                 return
             }
             
-            stateMachine.tryEvent(.presentRoom(roomID: roomID), userInfo: EventUserInfo(animated: animated))
+            #warning("FIXME")
+            // stateMachine.tryEvent(.presentRoom(roomID: roomID), userInfo: EventUserInfo(animated: animated))
+            presentCallScreen()
         case .roomDetails(let roomID):
             stateMachine.tryEvent(.presentRoomDetails(roomID: roomID), userInfo: EventUserInfo(animated: animated))
         case .roomList:
@@ -609,6 +611,17 @@ class RoomFlowCoordinator: FlowCoordinatorProtocol {
         }
         
         stateMachine.tryEvent(.presentRoom(roomID: roomID), userInfo: EventUserInfo(animated: true, destinationRoomProxy: targetRoomProxy))
+    }
+    
+    private func presentCallScreen() {
+        let callScreenCoordinator = CallScreenCoordinator(parameters: .init())
+        
+        navigationStackCoordinator.setRootCoordinator(callScreenCoordinator, animated: true) { [weak self] in
+        }
+        
+        if navigationSplitCoordinator.detailCoordinator == nil {
+            navigationSplitCoordinator.setDetailCoordinator(navigationStackCoordinator, animated: true)
+        }
     }
 }
 
