@@ -216,6 +216,7 @@ public struct TimelineItemMenu: View {
                     .frame(maxHeight: .infinity, alignment: .center)
                     .foregroundColor(.compound.iconSecondary)
                     .padding(10)
+                    .accessibilityLabel(L10n.screenRoomTimelineAddReaction)
             }
         }
         .padding(.horizontal)

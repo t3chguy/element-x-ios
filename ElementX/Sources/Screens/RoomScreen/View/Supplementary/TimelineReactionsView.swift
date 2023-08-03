@@ -163,6 +163,7 @@ struct TimelineReactionAddMoreButtonLabel: View {
                 .frame(maxHeight: .infinity, alignment: .center)
                 .foregroundColor(.compound.iconSecondary)
         }
+        .accessibilityLabel(L10n.screenRoomTimelineAddReaction)
     }
 }
 
