@@ -20,7 +20,8 @@ enum CallScreenViewModelAction { }
 
 struct CallScreenViewState: BindableState {
     let initialURL: URL
-    let userContentControllerName: String
+    let messageHandler: String
+    let messageWithReplyHandler: String
     let script: String?
     var bindings = Bindings()
 }

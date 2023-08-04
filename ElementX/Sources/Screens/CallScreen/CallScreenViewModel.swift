@@ -35,7 +35,19 @@ class CallScreenViewModel: CallScreenViewModelType, CallScreenViewModelProtocol 
     
     private static var script: String {
         """
-        document.addEventListener('click', function(){ window.webkit.messageHandlers.elementx.postMessage('click clack!'); })
+        document.addEventListener('click', function(){
+            window.webkit.messageHandlers.elementx.postMessage('click clack!');
+
+            var promise = window.webkit.messageHandlers.elementx2.postMessage("Hi, Alice!");
+
+            promise.then(function(result) {
+                 console.log(result);
+                 window.webkit.messageHandlers.elementx.postMessage(result);
+            }, function(err) {
+                 console.log(err);
+                 window.webkit.messageHandlers.elementx.postMessage(err);
+            });
+        })
         """
     }
     
@@ -45,7 +57,8 @@ class CallScreenViewModel: CallScreenViewModelType, CallScreenViewModelProtocol 
     
     init() {
         super.init(initialViewState: CallScreenViewState(initialURL: "https://call.element.io/stefanTestsThings",
-                                                         userContentControllerName: "elementx",
+                                                         messageHandler: "elementx",
+                                                         messageWithReplyHandler: "elementx2",
                                                          script: Self.script))
         
         Task {

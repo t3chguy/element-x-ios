@@ -47,7 +47,7 @@ struct WebView: UIViewRepresentable {
     }
     
     @MainActor
-    class Coordinator: NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationDelegate {
+    class Coordinator: NSObject, WKScriptMessageHandler, WKScriptMessageHandlerWithReply, WKUIDelegate, WKNavigationDelegate {
         private let viewModelContext: CallScreenViewModel.Context
         private var webViewURLObservation: NSKeyValueObservation?
         
@@ -61,7 +61,9 @@ struct WebView: UIViewRepresentable {
             let configuration = WKWebViewConfiguration()
             
             let userContentController = WKUserContentController()
-            userContentController.add(self, name: viewModelContext.viewState.userContentControllerName)
+            userContentController.add(self, name: viewModelContext.viewState.messageHandler)
+            userContentController.addScriptMessageHandler(self, contentWorld: .page, name: viewModelContext.viewState.messageWithReplyHandler)
+            
             configuration.userContentController = userContentController
             configuration.allowsInlineMediaPlayback = true
             configuration.allowsPictureInPictureMediaPlayback = true
@@ -85,10 +87,17 @@ struct WebView: UIViewRepresentable {
         
         // MARK: - WKScriptMessageHandler
         
-        nonisolated func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        nonisolated func userContentController(_ userContentController: WKUserContentController,
+                                               didReceive message: WKScriptMessage) {
             Task { @MainActor in
                 viewModelContext.send(viewAction: .receivedEvent(message.body))
             }
+        }
+        
+        // MARK: - WKScriptMessageHandlerWithReply
+        
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) async -> (Any?, String?) {
+            ("Well, hello, Bob!", nil)
         }
         
         // MARK: - WKUIDelegate
