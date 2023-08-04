@@ -31,4 +31,5 @@ struct Bindings {
 
 enum CallScreenViewAction {
     case receivedEvent(Any)
+    case urlChanged(URL?)
 }

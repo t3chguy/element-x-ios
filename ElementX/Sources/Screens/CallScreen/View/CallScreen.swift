@@ -47,9 +47,11 @@ struct WebView: UIViewRepresentable {
     }
     
     @MainActor
-    class Coordinator: NSObject, WKScriptMessageHandler {
-        var webView: WKWebView!
+    class Coordinator: NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationDelegate {
         private let viewModelContext: CallScreenViewModel.Context
+        private var webViewURLObservation: NSKeyValueObservation?
+        
+        private(set) var webView: WKWebView!
         
         init(viewModelContext: CallScreenViewModel.Context) {
             self.viewModelContext = viewModelContext
@@ -61,6 +63,8 @@ struct WebView: UIViewRepresentable {
             let userContentController = WKUserContentController()
             userContentController.add(self, name: viewModelContext.viewState.userContentControllerName)
             configuration.userContentController = userContentController
+            configuration.allowsInlineMediaPlayback = true
+            configuration.allowsPictureInPictureMediaPlayback = true
             
             if let script = viewModelContext.viewState.script {
                 let userScript = WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
@@ -68,6 +72,11 @@ struct WebView: UIViewRepresentable {
             }
             
             webView = WKWebView(frame: .zero, configuration: configuration)
+            webView.uiDelegate = self
+            webView.navigationDelegate = self
+            
+            // Allows Jitsi to run inside a WebView
+            webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15"
         }
         
         func evaluateJavaScript(_ script: String) async throws -> Any {
@@ -79,6 +88,20 @@ struct WebView: UIViewRepresentable {
         nonisolated func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
             Task { @MainActor in
                 viewModelContext.send(viewAction: .receivedEvent(message.body))
+            }
+        }
+        
+        // MARK: - WKUIDelegate
+        
+        func webView(_ webView: WKWebView, decideMediaCapturePermissionsFor origin: WKSecurityOrigin, initiatedBy frame: WKFrameInfo, type: WKMediaCaptureType) async -> WKPermissionDecision {
+            .grant
+        }
+        
+        // MARK: - WKNavigationDelegate
+        
+        nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            Task { @MainActor in
+                viewModelContext.send(viewAction: .urlChanged(webView.url))
             }
         }
     }
