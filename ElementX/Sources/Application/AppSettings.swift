@@ -36,6 +36,7 @@ final class AppSettings {
         case notificationSettingsEnabled
         case swiftUITimelineEnabled
         case pollsInTimeline
+        case pollsCreationEnabled
     }
     
     private static var suiteName: String = InfoPlistReader.main.appGroupIdentifier
@@ -225,4 +226,7 @@ final class AppSettings {
 
     @UserPreference(key: UserDefaultsKeys.pollsInTimeline, defaultValue: false, storageType: .userDefaults(store))
     var pollsInTimelineEnabled
+
+    @UserPreference(key: UserDefaultsKeys.pollsCreationEnabled, defaultValue: false, storageType: .userDefaults(store))
+    var pollsCreationEnabled
 }
