@@ -35,6 +35,7 @@ class RoomProxy: RoomProxyProtocol {
     
     private var roomTimelineObservationToken: TaskHandle?
     private var backPaginationStateObservationToken: TaskHandle?
+    private var roomInfoObservationToken: TaskHandle?
 
     private let backPaginationStateSubject = PassthroughSubject<BackPaginationStatus, Never>()
     private let membersSubject = CurrentValueSubject<[RoomMemberProxyProtocol], Never>([])
@@ -102,6 +103,8 @@ class RoomProxy: RoomProxyProtocol {
         roomTimelineObservationToken = result.itemsStream
         
         subscribeToBackpagination()
+        
+        subscribeToRoomStateUpdates()
         
         innerTimelineProvider = await RoomTimelineProvider(currentItems: result.items,
                                                            updatePublisher: updatesPublisher,
@@ -695,6 +698,12 @@ class RoomProxy: RoomProxyProtocol {
             MXLog.error("Failed to subscribe to back pagination state with error: \(error)")
         }
     }
+    
+    private func subscribeToRoomStateUpdates() {
+        roomInfoObservationToken = room.subscribeToRoomInfoUpdate(listener: RoomInfoUpdateListener {
+            MXLog.info("Received room info update")
+        })
+    }
 }
 
 private final class RoomTimelineListener: TimelineListener {
@@ -732,5 +741,17 @@ private final class RoomBackpaginationStatusListener: BackPaginationStatusListen
 
     func onUpdate(status: BackPaginationStatus) {
         onUpdateClosure(status)
+    }
+}
+
+private final class RoomInfoUpdateListener: VoidCallbackInterface {
+    private let onUpdateClosure: () -> Void
+    
+    init(_ onUpdateClosure: @escaping () -> Void) {
+        self.onUpdateClosure = onUpdateClosure
+    }
+    
+    func call() {
+        onUpdateClosure()
     }
 }
